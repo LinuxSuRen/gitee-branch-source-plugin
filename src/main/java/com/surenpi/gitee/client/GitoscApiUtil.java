@@ -17,8 +17,6 @@
 package com.surenpi.gitee.client;
 
 import com.google.gson.*;
-import com.google.gson.reflect.TypeToken;
-
 
 import com.surenpi.gitee.client.data.*;
 import com.surenpi.gitee.client.exceptions.GitoscAuthenticationException;
@@ -30,19 +28,6 @@ import com.surenpi.gitee.client.requests.GitoscGistRequest;
 import com.surenpi.gitee.client.requests.GitoscRepoRequest;
 import org.apache.http.Header;
 import org.apache.http.message.BasicHeader;
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 import java.io.IOException;
 import java.net.URLEncoder;
@@ -392,10 +377,10 @@ public class GitoscApiUtil {
 	//====================================================================================
 
 
-	public static List<GitoscRepo> getAvailableRepos(GitoscConnection connection) throws IOException {
+	public static List<GitoscRepo> getAvailableRepos(String user, GitoscConnection connection) throws IOException {
 		try{
 			List<GitoscRepo> repos = new ArrayList<GitoscRepo>();
-			repos.addAll(getUserRepos(connection, true));
+			repos.addAll(getUserRepos(user, connection, true));
 			return repos;
 		}catch (GitoscConfusingException e){
 			e.setDetails("Can't get available repositories");
@@ -444,12 +429,12 @@ public class GitoscApiUtil {
 	}
 
 
-	public static List<GitoscRepo> getUserRepos(GitoscConnection connection) throws IOException {
-		return getUserRepos(connection, false);
+	public static List<GitoscRepo> getUserRepos(String user, GitoscConnection connection) throws IOException {
+		return getUserRepos(user , connection, false);
 	}
 
 
-	public static List<GitoscRepo> getUserRepos(GitoscConnection connection, boolean allAssociated) throws IOException {
+	public static List<GitoscRepo> getUserRepos(String user, GitoscConnection connection, boolean allAssociated) throws IOException {
 		try {
 			String path;
 
@@ -459,7 +444,7 @@ public class GitoscApiUtil {
 					path = "/user/repos?" + type + PER_PAGE;
 					return loadAll(connection, path, GitoscRepo[].class, ACCEPT_V3_JSON);
 				default:
-					path = "/projects?";
+					path = "/api/v5/users/" + user + "/repos?1=1";
 					return loadAll(connection, path, GitoscRepo[].class, ACCEPT_V3_JSON);
 //					GitoscConnection.PagedRequest<GitoscRepo> request = new GitoscConnection.PagedRequest<GitoscRepo>(path, GitoscRepo.class, GitoscRepoRaw[].class);
 //					return request.getAll(connection);

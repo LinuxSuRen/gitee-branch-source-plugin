@@ -58,7 +58,7 @@ public class GitoscUrlUtil {
 	}
 
 	public static String getHost() {
-	    return "https://git.oschina.net";
+	    return "https://gitee.com/";
     }
 
 
