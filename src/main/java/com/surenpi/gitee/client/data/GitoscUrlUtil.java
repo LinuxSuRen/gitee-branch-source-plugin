@@ -49,34 +49,48 @@ public class GitoscUrlUtil {
 		return s;
 	}
 
-	/**
-	 * E.g.: https://git.oschina.net/api/v3
-	 */
-
+    /**
+     * @return E.g.: https://git.oschina.net/api/v3
+     */
 	public static String getApiUrl() {
 		return getApiUrl(getHost());
 	}
 
+    /**
+     * @return host
+     */
 	public static String getHost() {
 	    return "https://gitee.com/";
     }
 
 
+	/**
+	 * @param urlFromSettings
+	 * @return api url
+	 */
 	public static String getApiUrl(String urlFromSettings) {
 		return getApiProtocolFromUrl(urlFromSettings) + getApiUrlWithoutProtocol(urlFromSettings);
 	}
 
-
+    /**
+     * @param auth
+     * @return api url
+     */
 	public static String getApiUrl(GitoscAuthData auth) {
 		return getApiProtocolFromUrl(auth.getHost()) + getApiUrlWithoutProtocol(auth);
 	}
 
-
+    /**
+     * @return api protocol
+     */
 	public static String getApiProtocol() {
 		return getApiProtocolFromUrl(getHost());
 	}
 
-
+    /**
+     * @param urlFromSettings
+     * @return api protocol
+     */
 	public static String getApiProtocolFromUrl(String urlFromSettings) {
 		if (StringUtils.startsWithIgnoreCase(urlFromSettings.trim(), "http://")){
 			return "http://";
@@ -89,8 +103,8 @@ public class GitoscUrlUtil {
 	 * Returns the "host" part of Gitosc URLs.
 	 * E.g.: https://git.oschina.net
 	 * Note: there is no trailing slash in the returned url.
+     * @return git host
 	 */
-
 	public static String getGitoscHost() {
 		return getApiProtocol() + getGitHostWithoutProtocol();
 	}
@@ -98,8 +112,8 @@ public class GitoscUrlUtil {
 	/**
 	 * E.g.: https://git.oschina.net/suffix/ -> git.oschina.net
 	 *       git.oschina.net:8080/ -> git.oschina.net
+     * @return  host
 	 */
-
 	public static String getHostFromUrl(String url) {
 		String path = removeProtocolPrefix(url).replace(':', '/');
 		int index = path.indexOf('/');
@@ -113,14 +127,16 @@ public class GitoscUrlUtil {
 
 
 	/**
-	 * E.g.: git.oschina.net
+	 * @return E.g.: git.oschina.net
 	 */
-
 	public static String getGitHostWithoutProtocol() {
 		return removeTrailingSlash(removeProtocolPrefix(getHost()));
 	}
 
-
+    /**
+     * @param urlFromSettings
+     * @return getApiUrlWithoutProtocol
+     */
 	public static String getApiUrlWithoutProtocol(String urlFromSettings) {
 		String url = removeTrailingSlash(removeProtocolPrefix(urlFromSettings.toLowerCase()));
 

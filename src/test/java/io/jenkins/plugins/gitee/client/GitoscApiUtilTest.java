@@ -42,8 +42,6 @@ public class GitoscApiUtilTest {
 
     @Test
     public void forceSyncProject() throws IOException {
-//        GitoscAuthData authData = GitoscAuthData.createSessionAuth("", "", "");
-//        connect = new GitoscConnection(authData, true);
         GitoscApiUtil.forceSyncProject(connect, "arch2surenpi", "jenkins-client-java");
     }
 }

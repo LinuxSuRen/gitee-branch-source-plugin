@@ -21,10 +21,12 @@ import hudson.tasks.Recorder;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
+import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.URIish;
 import org.jenkinsci.Symbol;
 import org.jenkinsci.plugins.gitclient.Git;
 import org.jenkinsci.plugins.gitclient.GitClient;
+import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.DataBoundSetter;
 
 import javax.annotation.Nonnull;
@@ -40,42 +42,31 @@ import java.util.UUID;
  */
 public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
 {
-    private String srcUrl;
-    private String srcName = "origin";
-    private String srcRef = "master";
-    private String srcCredentialId;
-
     private String targetUrl;
-    private String targetName = "origin";
-    private String targetRef = "master";
-    private String targetCredentialId;
+    private String targetName = "target";
+    private String targetBranch = "master";
+    private String credentialsId;
+
+    @DataBoundConstructor
+    public GiteeSyncBuilder() {
+    }
 
     @Override
     public void perform(@Nonnull Run<?, ?> run, @Nonnull FilePath workspace, @Nonnull Launcher launcher,
                         @Nonnull TaskListener listener) throws InterruptedException, IOException
     {
-        FilePath src = workspace.child("src");
-        FilePath target = workspace.child("target");
-
         Git git = new Git(listener, null);
-        GitClient client = git.in(src).getClient();
+        GitClient client = git.in(workspace).getClient();
 
-        setCredential(client, getSrcCredentialId());
-        client.clone(srcUrl, srcName, true, srcRef);
-        client.checkout().ref(srcRef).execute();
+        setCredential(client, credentialsId);
 
-        client = git.in(target).getClient();
-        setCredential(client, getTargetCredentialId());
-        client.clone(targetUrl, targetName, true, targetRef);
-        client.checkout().ref("refs/remotes/" + targetName  + "/" + targetRef).execute();
-        client.checkout().branch(targetRef).deleteBranchIfExist(true).ref("HEAD").execute();
-//        client.checkout().branch(targetRef).deleteBranchIfExist(true).ref("HEAD").execute();
-        src.copyRecursiveTo(target);
-        client.add(".");
-        client.commit("sdf");
+        client.addRemoteUrl(getTargetName(), getTargetUrl());
+
+        client.branch(targetBranch);
+        client.checkout(targetBranch);
+
         try {
-            String targetURI = client.getRemoteUrl(targetName);
-            client.push().to(new URIish(targetURI)).ref(targetRef).force(true).execute();
+            client.push().to(new URIish(targetUrl)).ref(targetBranch).force(true).execute();
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
@@ -94,7 +85,7 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
 
     private StandardUsernameCredentials getCredential(String credentialId) {
         List<StandardUsernameCredentials> allCredentials = CredentialsProvider.lookupCredentials
-                (StandardUsernameCredentials.class, Jenkins.get(), ACL.SYSTEM, new ArrayList<>());
+                (StandardUsernameCredentials.class, Jenkins.getInstance(), ACL.SYSTEM, new ArrayList<>());
 
         Credentials credential = CredentialsMatchers.firstOrNull(
                 allCredentials, CredentialsMatchers.withId(credentialId));
@@ -114,9 +105,19 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
     }
 
     @Extension
-    @Symbol("hugoGitSubmodulePublsh")
+    @Symbol("GitSync")
     public static final class DescriptorImpl extends BuildStepDescriptor<Publisher>
     {
+        public ListBoxModel doFillCredentialsIdItems() {
+            FreeStyleProject project = new FreeStyleProject(Jenkins.getInstance(),"fake-" + UUID.randomUUID().toString());
+
+            return new StandardListBoxModel().includeEmptyValue()
+                    .includeMatchingAs(ACL.SYSTEM, project,
+                            StandardUsernameCredentials.class,
+                            new ArrayList<>(),
+                            CredentialsMatchers.withScopes(CredentialsScope.GLOBAL));
+        }
+
         @Override
         public boolean isApplicable(Class<? extends AbstractProject> jobType)
         {
@@ -127,48 +128,12 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
         @Override
         public String getDisplayName()
         {
-            return "";
+            return "Git Sync";
         }
-    }
-
-    public String getSrcUrl() {
-        return srcUrl;
-    }
-
-    @DataBoundSetter
-    public void setSrcUrl(String srcUrl) {
-        this.srcUrl = srcUrl;
-    }
-
-    public String getSrcName() {
-        return srcName;
-    }
-
-    @DataBoundSetter
-    public void setSrcName(String srcName) {
-        this.srcName = srcName;
-    }
-
-    public String getSrcRef() {
-        return srcRef;
-    }
-
-    @DataBoundSetter
-    public void setSrcRef(String srcRef) {
-        this.srcRef = srcRef;
     }
 
     public String getTargetUrl() {
         return targetUrl;
-    }
-
-    public String getSrcCredentialId() {
-        return srcCredentialId;
-    }
-
-    @DataBoundSetter
-    public void setSrcCredentialId(String srcCredentialId) {
-        this.srcCredentialId = srcCredentialId;
     }
 
     @DataBoundSetter
@@ -176,13 +141,13 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
         this.targetUrl = targetUrl;
     }
 
-    public String getTargetRef() {
-        return targetRef;
+    public String getTargetBranch() {
+        return targetBranch;
     }
 
     @DataBoundSetter
-    public void setTargetRef(String targetRef) {
-        this.targetRef = targetRef;
+    public void setTargetBranch(String targetBranch) {
+        this.targetBranch = targetBranch;
     }
 
     public String getTargetName() {
@@ -194,12 +159,12 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
         this.targetName = targetName;
     }
 
-    public String getTargetCredentialId() {
-        return targetCredentialId;
+    public String getCredentialsId() {
+        return credentialsId;
     }
 
     @DataBoundSetter
-    public void setTargetCredentialId(String targetCredentialId) {
-        this.targetCredentialId = targetCredentialId;
+    public void setCredentialsId(String credentialsId) {
+        this.credentialsId = credentialsId;
     }
 }
