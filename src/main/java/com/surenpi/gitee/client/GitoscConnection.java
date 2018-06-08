@@ -129,7 +129,8 @@ public class GitoscConnection {
 	private static StringEntity createEntity(String requestBody,  GitoscAuthData.AuthType authType){
 		switch (authType){
 			case TOKEN:
-				return new StringEntity(requestBody, ContentType.APPLICATION_JSON);
+            case SESSION:
+                return new StringEntity(requestBody, ContentType.APPLICATION_JSON);
 			default:
 				return new StringEntity(requestBody, ContentType.create("application/x-www-form-urlencoded", "UTF-8"));
 		}
@@ -175,7 +176,10 @@ public class GitoscConnection {
 	                              String requestBody,
 	                              Collection<Header> headers,
 	                              HttpVerb verb) throws IOException {
-		return doRequest(getRequestUrl(myApiURL, path + "?" + getAccessToken()), requestBody, headers, verb);
+		if(getAccessToken() != null) {
+		    path = path + "?" + getAccessToken();
+        }
+		return doRequest(getRequestUrl(myApiURL, path), requestBody, headers, verb);
 	}
 
 

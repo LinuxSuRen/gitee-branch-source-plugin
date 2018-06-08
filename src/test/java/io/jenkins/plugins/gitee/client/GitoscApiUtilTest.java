@@ -4,6 +4,7 @@ import com.surenpi.gitee.client.GitoscApiUtil;
 import com.surenpi.gitee.client.GitoscConnection;
 import com.surenpi.gitee.client.data.GitoscAuthData;
 import com.surenpi.gitee.client.data.GitoscRepo;
+import com.surenpi.gitee.client.data.GitoscRepoDetailed;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -29,5 +30,20 @@ public class GitoscApiUtilTest {
 
         assertNotNull(repos);
         assertTrue(repos.size() > 0);
+    }
+
+    @Test
+    public void getDetailedRepoInfo() throws IOException {
+        GitoscRepoDetailed info = GitoscApiUtil.getDetailedRepoInfo(connect, "arch2surenpi", "test");
+
+        assertNotNull(info);
+        assertNotNull(info.getFullName());
+    }
+
+    @Test
+    public void forceSyncProject() throws IOException {
+//        GitoscAuthData authData = GitoscAuthData.createSessionAuth("", "", "");
+//        connect = new GitoscConnection(authData, true);
+        GitoscApiUtil.forceSyncProject(connect, "arch2surenpi", "jenkins-client-java");
     }
 }

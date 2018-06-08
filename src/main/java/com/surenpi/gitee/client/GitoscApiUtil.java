@@ -334,6 +334,13 @@ public class GitoscApiUtil {
 		return fromJson(result, type);
 	}
 
+    private static void post(GitoscConnection connection,
+                              String path,
+                              Object request,
+                              Header... headers) throws IOException {
+        connection.postRequest(path, gson.toJson(request), headers);
+    }
+
 
 	private static <T> T loadPost(GitoscConnection connection,
 	                              String path,
@@ -418,7 +425,7 @@ public class GitoscApiUtil {
 					final String request = "/repos/" + owner + "/" + name;
 					return load(connection, request, GitoscRepoDetailed.class, ACCEPT_V3_JSON);
 				default:
-					final String path = "/projects/" + owner + "%2F" + name;
+					final String path = "/repos/" + owner + "/" + name;
 					return load(connection, path, GitoscRepoDetailed.class, ACCEPT_V3_JSON);
 			}
 		}
@@ -444,7 +451,7 @@ public class GitoscApiUtil {
 					path = "/user/repos?" + type + PER_PAGE;
 					return loadAll(connection, path, GitoscRepo[].class, ACCEPT_V3_JSON);
 				default:
-					path = "/api/v5/users/" + user + "/repos?1=1";
+					path = "/users/" + user + "/repos?1=1";
 					return loadAll(connection, path, GitoscRepo[].class, ACCEPT_V3_JSON);
 //					GitoscConnection.PagedRequest<GitoscRepo> request = new GitoscConnection.PagedRequest<GitoscRepo>(path, GitoscRepo.class, GitoscRepoRaw[].class);
 //					return request.getAll(connection);
@@ -485,4 +492,51 @@ public class GitoscApiUtil {
 		}
 	}
 
+	public static void forceSyncProject(GitoscConnection connect, String owner, String project) throws IOException {
+        //https://gitee.com/arch2surenpi/jenkins-client-java/force_sync_project
+        String user = "zxjlwt@126.com";
+        String passwd = "walkman31415";
+        String token = "lW9DIWWyhUyTrV6234Uhk2VWd936Tud6Ho36I8YG3i0=";
+        String path = "/" + owner + "/" + project + "/force_sync_project";
+        post(connect, path, new ForceSyncProject(user, passwd, token), ACCEPT_V3_JSON,
+                new BasicHeader("X-CSRF-Token", token),
+                new BasicHeader("X-Requested-With", "XMLHttpRequest"),
+                new BasicHeader("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8"));
+    }
+
+    static class ForceSyncProject {
+	    private String user_sync_code;
+	    private String password_sync_code;
+	    private String authenticity_token;
+
+        public ForceSyncProject(String user_sync_code, String password_sync_code, String authenticity_token) {
+            this.user_sync_code = user_sync_code;
+            this.password_sync_code = password_sync_code;
+            this.authenticity_token = authenticity_token;
+        }
+
+        public String getUser_sync_code() {
+            return user_sync_code;
+        }
+
+        public void setUser_sync_code(String user_sync_code) {
+            this.user_sync_code = user_sync_code;
+        }
+
+        public String getPassword_sync_code() {
+            return password_sync_code;
+        }
+
+        public void setPassword_sync_code(String password_sync_code) {
+            this.password_sync_code = password_sync_code;
+        }
+
+        public String getAuthenticity_token() {
+            return authenticity_token;
+        }
+
+        public void setAuthenticity_token(String authenticity_token) {
+            this.authenticity_token = authenticity_token;
+        }
+    }
 }
