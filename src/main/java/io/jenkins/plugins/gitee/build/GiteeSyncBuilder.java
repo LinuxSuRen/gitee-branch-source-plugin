@@ -13,11 +13,9 @@ import hudson.model.AbstractProject;
 import hudson.model.FreeStyleProject;
 import hudson.model.Run;
 import hudson.model.TaskListener;
+import hudson.plugins.git.Branch;
 import hudson.security.ACL;
-import hudson.tasks.BuildStepDescriptor;
-import hudson.tasks.BuildStepMonitor;
-import hudson.tasks.Publisher;
-import hudson.tasks.Recorder;
+import hudson.tasks.*;
 import hudson.util.ListBoxModel;
 import jenkins.model.Jenkins;
 import jenkins.tasks.SimpleBuildStep;
@@ -33,14 +31,12 @@ import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * @author suren
  */
-public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
+public class GiteeSyncBuilder extends Builder implements SimpleBuildStep
 {
     private String targetUrl;
     private String targetName = "target";
@@ -48,7 +44,8 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
     private String credentialsId;
 
     @DataBoundConstructor
-    public GiteeSyncBuilder() {
+    public GiteeSyncBuilder(String targetUrl) {
+        this.targetUrl = targetUrl;
     }
 
     @Override
@@ -57,29 +54,55 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
     {
         Git git = new Git(listener, null);
         GitClient client = git.in(workspace).getClient();
+        PrintStream logger = listener.getLogger();
 
-        setCredential(client, credentialsId);
+        setCredential(client, credentialsId, logger);
 
-        client.addRemoteUrl(getTargetName(), getTargetUrl());
+        if(client.getRemoteUrl(getTargetName()) == null) {
+            client.addRemoteUrl(getTargetName(), targetUrl);
+        }
 
-        client.branch(targetBranch);
-        client.checkout(targetBranch);
+        branchSwitch(client, targetBranch, logger);
+
+        logger.println(String.format("Prepare push to remote [%s] branch [%s].", targetUrl, targetBranch));
 
         try {
             client.push().to(new URIish(targetUrl)).ref(targetBranch).force(true).execute();
         } catch (URISyntaxException e) {
+            listener.fatalError(String.format("Push to remote [%s] error, msg [%s]", targetName, e.getMessage()));
             e.printStackTrace();
         }
     }
 
-    private void setCredential(GitClient client, String credentialId) {
-        if(credentialId == null) {
+    private void branchSwitch(GitClient client, String targetBranch, PrintStream logger) throws InterruptedException {
+        boolean targetBranchExist = false;
+        Set<Branch> branches = client.getBranches();
+        if(branches != null) {
+            targetBranchExist = branches.stream().anyMatch((branch) -> branch.getName().equals(targetBranch));
+        }
+
+        if(!targetBranchExist) {
+            logger.println(String.format("Target branch [%s] don't need to create.", targetBranch));
+
+            client.branch(targetBranch);
+        }
+
+        client.checkout(targetBranch);
+
+        logger.println(String.format("Already switch to branch [%s].", targetBranch));
+    }
+
+    private void setCredential(GitClient client, String credentialId, PrintStream logger) {
+        if(credentialId == null || "".equals(credentialId.trim())) {
+            logger.println("No credential provide.");
             return;
         }
 
         StandardUsernameCredentials credential = getCredential(credentialId);
         if(credential != null) {
             client.setCredentials(credential);
+        } else {
+            logger.println(String.format("Can not found credential by id [%s].", credentialId));
         }
     }
 
@@ -90,8 +113,7 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
         Credentials credential = CredentialsMatchers.firstOrNull(
                 allCredentials, CredentialsMatchers.withId(credentialId));
 
-        if(credential != null)
-        {
+        if(credential != null) {
             return (StandardUsernameCredentials) credential;
         }
 
@@ -106,8 +128,7 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
 
     @Extension
     @Symbol("GitSync")
-    public static final class DescriptorImpl extends BuildStepDescriptor<Publisher>
-    {
+    public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
         public ListBoxModel doFillCredentialsIdItems() {
             FreeStyleProject project = new FreeStyleProject(Jenkins.getInstance(),"fake-" + UUID.randomUUID().toString());
 
@@ -134,11 +155,6 @@ public class GiteeSyncBuilder extends Recorder implements SimpleBuildStep
 
     public String getTargetUrl() {
         return targetUrl;
-    }
-
-    @DataBoundSetter
-    public void setTargetUrl(String targetUrl) {
-        this.targetUrl = targetUrl;
     }
 
     public String getTargetBranch() {
