@@ -4,10 +4,10 @@
     <f:textbox />
   </f:entry>
   <f:entry title="${%TargetName}" field="targetName">
-    <f:textbox />
+    <f:textbox default="target" />
   </f:entry>
   <f:entry title="${%TargetBranch}" field="targetBranch">
-    <f:textbox />
+    <f:textbox default="master" />
   </f:entry>
   <f:entry title="${%Credentials}" field="credentialsId">
     <c:select/>
