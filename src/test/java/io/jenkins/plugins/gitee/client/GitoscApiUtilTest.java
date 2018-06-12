@@ -2,6 +2,7 @@ package io.jenkins.plugins.gitee.client;
 
 import com.surenpi.gitee.client.GitoscApiUtil;
 import com.surenpi.gitee.client.GitoscConnection;
+import com.surenpi.gitee.client.GitoscWebhook;
 import com.surenpi.gitee.client.data.GitoscAuthData;
 import com.surenpi.gitee.client.data.GitoscRepo;
 import com.surenpi.gitee.client.data.GitoscRepoDetailed;
@@ -20,7 +21,11 @@ public class GitoscApiUtilTest {
 
     @Before
     public void setup() {
-        GitoscAuthData authData = GitoscAuthData.createAnonymous();
+        GitoscAuthData authData = GitoscAuthData.createSessionAuth(
+                "https://gitee.com/",
+                "zxjlwt@126.com",
+                "walkman31415",
+                "Pwt14i3tKYgjasWEVE9m");
 
         connect = new GitoscConnection(authData, true);
     }
@@ -47,5 +52,12 @@ public class GitoscApiUtilTest {
     @Ignore
     public void forceSyncProject() throws IOException {
         GitoscApiUtil.forceSyncProject(connect, "arch2surenpi", "jenkins-client-java");
+    }
+
+    @Test
+    public void createWebhook() throws IOException {
+        GitoscWebhook webhook = GitoscApiUtil.createWebhook(connect, "surenpi", "test");
+
+        assertNotNull(webhook);
     }
 }

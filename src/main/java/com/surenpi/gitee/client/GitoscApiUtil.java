@@ -178,6 +178,14 @@ public class GitoscApiUtil {
 		}
 	}
 
+	public static GitoscWebhook createWebhook(GitoscConnection connection, String owner, String repo) throws IOException {
+        Map<String, String> request = new HashMap<>();
+        request.put("url", "http://baidu.com");
+
+        String path = String.format("/repos/%s/%s/hooks", owner, repo);
+
+        return post(connection, path, request, GitoscWebhook.class, ACCEPT_V3_JSON);
+    }
 
 	public static List<GitoscIssue> getIssuesQueried(GitoscConnection connection,
 													 String user,
@@ -450,6 +458,8 @@ public class GitoscApiUtil {
 					String type = allAssociated ? "" : "type=owner&";
 					path = "/user/repos?" + type + PER_PAGE;
 					return loadAll(connection, path, GitoscRepo[].class, ACCEPT_V3_JSON);
+//                case SESSION:
+//                    break;
 				default:
 					path = "/users/" + user + "/repos?1=1";
 					return loadAll(connection, path, GitoscRepo[].class, ACCEPT_V3_JSON);

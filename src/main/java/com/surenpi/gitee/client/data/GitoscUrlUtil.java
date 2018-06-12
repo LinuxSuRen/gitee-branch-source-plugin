@@ -158,7 +158,7 @@ public class GitoscUrlUtil {
 	public static String getApiUrlWithoutProtocol(GitoscAuthData auth) {
 		String url = removeTrailingSlash(removeProtocolPrefix(auth.getHost().toLowerCase()));
 
-		final String API_SUFFIX = auth.getTokenAuth() == null ? "" : "/api/v5";
+		final String API_SUFFIX = (auth.getTokenAuth() == null && auth.getSessionAuth() == null) ? "" : "/api/v5";
 
 		if (url.equals(GitoscConstants.DEFAULT_GITOSC_HOST)) {
 			return url + API_SUFFIX;
